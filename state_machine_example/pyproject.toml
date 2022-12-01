@@ -1,0 +1,36 @@
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+
+[tool.poetry]
+name = "state-machine-example"
+version = "0.1.0"
+description = ""
+authors = ["Konstantin-Dudersky <Konstantin.Dudersky@gmail.com>"]
+readme = "README.md"
+packages = [{ include = "state_machine_example" }]
+
+
+[tool.poetry.dependencies]
+python = "3.11"
+
+state_machine = { path = "../state_machine", develop = true }
+
+[tool.poetry.group.dev.dependencies]
+black = "*"
+wemake-python-styleguide = "0.17.0"
+
+
+[tool.poetry.scripts]
+start = "state_machine_example.__main__:main"
+
+
+[tool.pyright]
+pythonPlatform = "Linux"
+pythonVersion = "3.11"
+reportUnnecessaryTypeIgnoreComment = true
+stubPath = '.venv/typings/'
+typeCheckingMode = "strict"
+venvPath = "."
+venv = ".venv"
