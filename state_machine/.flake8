@@ -1,9 +1,7 @@
 [flake8]
-exclude =
-    tests/,
-    */migrations/,
-    .venv/,
-    env/
+exclude = 
+    tests, 
+    .venv/
 ignore =
     D301, # Use r""" if any backslashes in a docstring
     E203, # whitespace before ':'
@@ -23,9 +21,8 @@ max-complexity = 10
 max-line-length = 80
 multi-line-output-modes = 3
 nested-classes-whitelist = Config
-per-file-ignores =
-    # */settings.py:E501,
 statistics = true
+
 # darglint
 docstring_style = numpy
 strictness = long

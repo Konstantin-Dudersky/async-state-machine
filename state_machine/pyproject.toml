@@ -8,7 +8,7 @@ line-length = 80
 
 
 [tool.poetry]
-name = "state-machine"
+name = "state_machine"
 version = "0.1.0"
 description = ""
 authors = ["konstantin-dudersky <konstantin.dudersky@gmail.com>"]
@@ -22,6 +22,7 @@ python = "3.11"
 
 [tool.poetry.group.dev.dependencies]
 black = "*"
+pytest = "7.2.0"
 wemake-python-styleguide = "0.17.0"
 
 
@@ -33,3 +34,7 @@ stubPath = '.venv/typings/'
 typeCheckingMode = "strict"
 venvPath = "."
 venv = ".venv"
+
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

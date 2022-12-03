@@ -5,7 +5,7 @@ from typing import NamedTuple, Self
 from .states_enum import StatesEnum
 
 
-class NewStateExceptionData(NamedTuple):
+class NewStateData(NamedTuple):
     """Данные, передаваемые при генерации исключения."""
 
     active_state: StatesEnum | None
@@ -21,9 +21,9 @@ class NewStateException(Exception):  # noqa: N818
         active_state: StatesEnum | None = None,
     ) -> None:
         """Переход к новому состоянию."""
-        self.__exc_data: NewStateExceptionData
+        self.__exc_data: NewStateData
 
-        self.__exc_data = NewStateExceptionData(
+        self.__exc_data = NewStateData(
             active_state=active_state,
             new_state=new_state,
         )
@@ -31,7 +31,7 @@ class NewStateException(Exception):  # noqa: N818
     @classmethod
     def reraise(
         cls,
-        exc_data: NewStateExceptionData,
+        exc_data: NewStateData,
         active_state: StatesEnum,
     ) -> Self:
         """Перевызвать исключение."""
@@ -41,7 +41,7 @@ class NewStateException(Exception):  # noqa: N818
         )
 
     @property
-    def exception_data(self) -> NewStateExceptionData:
+    def exception_data(self) -> NewStateData:
         """Данные, сохраненные при вызове исключения."""
         return self.__exc_data
 

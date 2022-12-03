@@ -6,6 +6,7 @@ import state_machine as sm
 class StatesEnum(sm.StatesEnum):
     run = sm.enum_auto()
     pause = sm.enum_auto()
+    error = sm.enum_auto()
 
 
 async def run_execute() -> None:
@@ -26,16 +27,17 @@ async def run_on_exit() -> None:
 state_machine = sm.StateMachine(
     states=(
         sm.State(
-            enum_value=StatesEnum.run,
+            name=StatesEnum.run,
             on_run=[run_execute, run_execute2],
             on_exit=[run_on_exit],
         ),
         sm.State(
-            enum_value=StatesEnum.pause,
+            name=StatesEnum.pause,
             on_run=[],
         ),
     ),
     init_state=StatesEnum.run,
+    enum=StatesEnum,
 )
 
 
