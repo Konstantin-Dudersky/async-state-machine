@@ -3,12 +3,13 @@
 import asyncio
 from typing import Final, Iterable, Type
 
-from .exceptions import StateMachineError
+from .exceptions import NewStateException, StateMachineError
 from .state import State
 from .states_enum import StatesEnum
 
-MSG_REUSE_STATE: Final[str] = "Several use state with name: {name}"
-MSG_NOT_USED_STATES: Final[str] = "Need to define states: {states}"
+EXC_REUSE_STATE: Final[str] = "Several use state with name: {name}"
+EXC_NOT_USED_STATES: Final[str] = "Need to define states: {states}"
+EXC_NAME_NOT_FOUND: Final[str] = "State with name {name} not found."
 
 
 class StateMachine(object):
@@ -20,10 +21,10 @@ class StateMachine(object):
         init_state: StatesEnum,
         enum: Type[StatesEnum],
     ) -> None:
-        """Диаграмма состояний."""
+        """Определение диаграммы состояний."""
         self.__active_state: State
-        self.__states: Iterable[State]
         self.__enum_values: set[str]
+        self.__states: Iterable[State]
 
         self.__states = states
         self.__enum_values = {state.value for state in enum}
@@ -37,8 +38,13 @@ class StateMachine(object):
 
     async def task(self) -> None:
         """Задача для асинхронного выполнения."""
-        await self.__active_state.task()
-        await asyncio.sleep(2)
+        try:
+            await self.__active_state.task()
+        except NewStateException as exc:
+            self.__active_state = self.__find_state_by_name(
+                exc.exception_data.new_state,
+            )
+        await asyncio.sleep(0.1)
 
     def __set_init_state(self, init_state: StatesEnum) -> State:
         for state in self.__states:
@@ -53,7 +59,7 @@ class StateMachine(object):
         if len(names) != len(self.__enum_values):
             not_used_states = self.__enum_values.difference(names)
             raise StateMachineError(
-                MSG_NOT_USED_STATES.format(states=not_used_states),
+                EXC_NOT_USED_STATES.format(states=not_used_states),
             )
 
     def __extract_names(self) -> set[str]:
@@ -61,6 +67,12 @@ class StateMachine(object):
         for state in self.__states:
             name = state.name.value
             if name in names:
-                raise StateMachineError(MSG_REUSE_STATE.format(name=name))
+                raise StateMachineError(EXC_REUSE_STATE.format(name=name))
             names.add(name)
         return names
+
+    def __find_state_by_name(self, name: StatesEnum) -> State:
+        for state in self.__states:
+            if state.name == name:
+                return state
+        raise StateMachineError(EXC_NAME_NOT_FOUND.format(name=name))
