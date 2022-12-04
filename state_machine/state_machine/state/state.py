@@ -47,11 +47,11 @@ class State(object):
         """Имя состояния."""
         return self.__name
 
-    async def task(self) -> None:
+    async def run(self) -> None:
         """Задача для асинхронного выполнения, вызывается из StateMachine."""
-        print("state {0}".format(self.__name))
         await self.__on_enter.run()
         await self.__on_run.run()
+        new_state_data = self.__on_run.new_state_data
         await self.__on_exit.set_new_state_data(
-            self.__on_run.new_state_data,
+            new_state_data,
         ).run()

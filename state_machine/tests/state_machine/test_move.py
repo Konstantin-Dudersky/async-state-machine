@@ -32,12 +32,12 @@ def test_move_between_states() -> None:
                 on_run=[on_run_state_2],
             ),
         },
-        enum=States,
+        states_enum=States,
         init_state=States.state_1,
     )
 
     async def run():
-        task = state_machine.task()
+        task = state_machine.run()
         try:
             await asyncio.wait_for(task, 0.1)
         except asyncio.TimeoutError:
@@ -65,9 +65,9 @@ def test_exc_name_not_found() -> None:
                 on_run=[],
             ),
         },
-        enum=States,
+        states_enum=States,
         init_state=States.state_1,
     )
     with pytest.raises(sm.StateMachineError) as exc:
-        asyncio.run(state_machine.task())
+        asyncio.run(state_machine.run())
     assert str(exc.value) == "State with name UNKNOWN_STATE not found."

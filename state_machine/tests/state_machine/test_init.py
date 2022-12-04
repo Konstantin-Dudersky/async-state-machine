@@ -20,7 +20,7 @@ def test_exc_not_all_states() -> None:
                     on_run=[],
                 ),
             },
-            enum=States,
+            states_enum=States,
             init_state=States.state_1,
         )
     assert str(exc.value) == "Need to define states: {'state_2'}"
@@ -44,7 +44,7 @@ def test_exc_reuse_names() -> None:
                     on_run=[],
                 ),
             },
-            enum=States,
+            states_enum=States,
             init_state=States.state_1,
         )
     assert str(exc.value) == "Several use state with name: state_1"
@@ -63,7 +63,7 @@ def test_init_state() -> None:
                 on_run=[],
             ),
         },
-        enum=States,
+        states_enum=States,
         init_state=States.state_2,
     )
     assert state_machine.active_state.name == States.state_2

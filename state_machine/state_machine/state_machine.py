@@ -18,17 +18,17 @@ class StateMachine(object):
     def __init__(
         self,
         states: Iterable[State],
+        states_enum: Type[StatesEnum],
         init_state: StatesEnum,
-        enum: Type[StatesEnum],
     ) -> None:
         """Определение диаграммы состояний."""
         self.__active_state: State
-        self.__enum_values: set[str]
+        self.__state_names: set[str]
         self.__states: Iterable[State]
 
         self.__states = states
-        self.__enum_values = {state.value for state in enum}
-        self.__check_names()
+        self.__state_names = {state.value for state in states_enum}
+        self.__check_state_names()
         self.__active_state = self.__set_init_state(init_state)
 
     @property
@@ -36,10 +36,10 @@ class StateMachine(object):
         """Активное состояние."""
         return self.__active_state
 
-    async def task(self) -> None:
+    async def run(self) -> None:
         """Задача для асинхронного выполнения."""
         try:
-            await self.__active_state.task()
+            await self.__active_state.run()
         except NewStateException as exc:
             self.__active_state = self.__find_state_by_name(
                 exc.exception_data.new_state,
@@ -54,10 +54,10 @@ class StateMachine(object):
             "Init state {0} not found in states array".format(init_state),
         )
 
-    def __check_names(self) -> None:
+    def __check_state_names(self) -> None:
         names = self.__extract_names()
-        if len(names) != len(self.__enum_values):
-            not_used_states = self.__enum_values.difference(names)
+        if len(names) != len(self.__state_names):
+            not_used_states = self.__state_names.difference(names)
             raise StateMachineError(
                 EXC_NOT_USED_STATES.format(states=not_used_states),
             )
