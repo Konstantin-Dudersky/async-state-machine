@@ -54,6 +54,9 @@ def test_exc_name_not_found() -> None:
     async def on_run_state_1() -> None:
         raise sm.NewStateException("UNKNOWN_STATE")  # pyright: ignore
 
+    async def on_run_state_2() -> None:
+        pass
+
     state_machine = sm.StateMachine(
         states={
             sm.State(
@@ -62,7 +65,7 @@ def test_exc_name_not_found() -> None:
             ),
             sm.State(
                 name=States.state_2,
-                on_run=[],
+                on_run=[on_run_state_2],
             ),
         },
         states_enum=States,

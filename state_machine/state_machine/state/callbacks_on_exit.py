@@ -15,11 +15,13 @@ class CallbacksOnExit(CallbacksBase):
         self,
         callbacks: TCollection | None,
         name: StatesEnum,
+        timeout: float | None,
+        timeout_to_state: StatesEnum | None,
     ) -> None:
         """При выходе из состояния."""
         self.__new_state_data: NewStateData | None
 
-        super().__init__(callbacks, name)
+        super().__init__(callbacks, name, timeout, timeout_to_state)
         self.__new_state_data = None
 
     def set_new_state_data(  # noqa: WPS615
@@ -30,7 +32,7 @@ class CallbacksOnExit(CallbacksBase):
         self.__new_state_data = new_state_data
         return self
 
-    async def run(self) -> None:
+    async def _run(self) -> None:
         """Запуск."""
         if self.__new_state_data is None:
             raise StateMachineError(
@@ -39,7 +41,7 @@ class CallbacksOnExit(CallbacksBase):
         async with asyncio.TaskGroup() as tg:
             self._create_tasks(tg)
         raise NewStateException.reraise(
-            exc_data=self.__new_state_data,
+            new_state_data=self.__new_state_data,
             active_state=self._name,
         )
 
@@ -48,3 +50,6 @@ class CallbacksOnExit(CallbacksBase):
             return
         for task in self._callbacks:
             tg.create_task(task())
+
+    def _except_timeout(self) -> None:
+        raise NotImplementedError

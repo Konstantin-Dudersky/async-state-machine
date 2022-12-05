@@ -18,26 +18,32 @@ class NewStateException(Exception):  # noqa: N818
     def __init__(
         self,
         new_state: StatesEnum,
-        active_state: StatesEnum | None = None,
+        new_state_data: NewStateData | None = None,
     ) -> None:
         """Переход к новому состоянию."""
         self.__exc_data: NewStateData
 
-        self.__exc_data = NewStateData(
-            active_state=active_state,
-            new_state=new_state,
-        )
+        if new_state_data is None:
+            self.__exc_data = NewStateData(
+                active_state=None,
+                new_state=new_state,
+            )
+        else:
+            self.__exc_data = new_state_data
 
     @classmethod
     def reraise(
         cls,
-        exc_data: NewStateData,
+        new_state_data: NewStateData,
         active_state: StatesEnum,
     ) -> Self:
         """Перевызвать исключение."""
         return cls(
-            new_state=exc_data.new_state,
-            active_state=active_state,
+            new_state=new_state_data.new_state,
+            new_state_data=NewStateData(
+                active_state=active_state,
+                new_state=new_state_data.new_state,
+            ),
         )
 
     @property
@@ -59,3 +65,7 @@ class StateMachineError(Exception):
     def message(self) -> str:
         """Сообщение."""
         return self.__message
+
+
+class StateTimeoutError(Exception):
+    """Превышение времени выполнения."""

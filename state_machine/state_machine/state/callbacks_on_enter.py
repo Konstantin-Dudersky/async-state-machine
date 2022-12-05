@@ -3,12 +3,13 @@
 import asyncio
 
 from .callbacks_base import CallbacksBase
+from ..exceptions import StateTimeoutError
 
 
 class CallbacksOnEnter(CallbacksBase):
     """При входе в состояние."""
 
-    async def run(self) -> None:
+    async def _run(self) -> None:
         """Запуск."""
         async with asyncio.TaskGroup() as tg:
             self._create_tasks(tg)
@@ -18,3 +19,7 @@ class CallbacksOnEnter(CallbacksBase):
             return
         for task in self._callbacks:
             tg.create_task(task())
+
+    def _except_timeout(self) -> None:
+        if self._timeout_to_state is None:
+            raise StateTimeoutError
