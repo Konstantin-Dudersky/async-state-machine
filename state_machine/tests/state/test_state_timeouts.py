@@ -83,7 +83,6 @@ def test_on_run_to_state() -> None:
 
 def test_on_exit_timeout() -> None:
     async def on_run() -> None:
-        await asyncio.sleep(1)
         raise sm.NewStateException(States.state_2)
 
     async def on_exit() -> None:
@@ -92,10 +91,10 @@ def test_on_exit_timeout() -> None:
     state = sm.State(
         name=States.state_1,
         on_run=[on_run],
-        timeout_on_run=0.1,
+        timeout_on_run=2,
         timeout_on_run_to_state=States.state_2,
         on_exit=[on_exit],
-        timeout_on_exit=0.5,
+        timeout_on_exit=1,
     )
 
     try:
@@ -105,6 +104,7 @@ def test_on_exit_timeout() -> None:
             exc.message
             == "Timeout occur in state state_1, stage on_exit, but target state not specified"
         )
+    assert False
 
 
 def test_on_exit_to_state() -> None:

@@ -47,41 +47,40 @@ class Callbacks(object):
     async def run(self) -> None:
         """Запуск."""
         log.debug(
-            "Start run state {name}, stage {stage}".format(
+            "Start state {name}, stage {stage}".format(
                 name=self.__name,
                 stage=self.__stage,
             )
         )
         new_state_data: NewStateData | None = None
         try:
-            await self.__run_with_timeout()
+            await self.__create_taskgroup()
         except* asyncio.TimeoutError:
-            self._except_timeout()
+            self.__except_timeout()
         except* NewStateException as exc:
-            new_state_data = self._except_new_state(exc)
+            new_state_data = self.__except_new_state(exc)
+        log.debug(
+            "End state {name}, stage {stage}".format(
+                name=self.__name,
+                stage=self.__stage,
+            )
+        )
         if new_state_data is not None:
             raise NewStateException.reraise(new_state_data, self.__name)
 
-    async def __run_with_timeout(self) -> None:
-        if self.__timeout is None:
-            await self._create_taskgroup()
-            return
-        async with asyncio.timeout(self.__timeout):
-            await self._create_taskgroup()
-
-    async def _create_taskgroup(self) -> None:
+    async def __create_taskgroup(self) -> None:
         """Запуск."""
         async with asyncio.TaskGroup() as tg:
-            self._create_tasks(tg)
+            self.__create_tasks(tg)
 
-    def _create_tasks(self, tg: asyncio.TaskGroup) -> None:
+    def __create_tasks(self, tg: asyncio.TaskGroup) -> None:
         """Создание группы задач."""
         if self.__callbacks is None:
             return
         for task in self.__callbacks:
-            tg.create_task(task())
+            tg.create_task(asyncio.wait_for(task(), self.__timeout))
 
-    def _except_timeout(self) -> None:
+    def __except_timeout(self) -> None:
         """Обработка превышения времени выполнения."""
         log.debug(EXC_TIMEOUT.format(name=self.__name, stage=self.__stage))
         if self.__timeout_to_state is None:
@@ -97,14 +96,22 @@ class Callbacks(object):
             new_state=self.__timeout_to_state,
         )
 
-    def _except_new_state(
+    def __except_new_state(
         self,
         exc: ExceptionGroup[NewStateException],
     ) -> NewStateData:
         """Обработка перехода в новое состояние."""
         new_state_data = exc.exceptions[0]
         if isinstance(new_state_data, NewStateException):
-            return new_state_data.exception_data
+            exc_data = new_state_data.exception_data
+            log.debug(
+                "State {name}, stage {stage}, new state: {new_name}".format(
+                    name=self.__name,
+                    stage=self.__stage,
+                    new_name=exc_data.new_state,
+                )
+            )
+            return exc_data
         raise StateMachineError
 
 
