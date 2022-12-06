@@ -1,13 +1,12 @@
-"""Запуск функций из определения State."""
+"""Запуск функций для этапа состояния."""
 
 import asyncio
 import logging
-from abc import ABC, abstractmethod
 from typing import Any, Callable, Coroutine, Final, Literal
 
 from ..exceptions import NewStateData, NewStateException, StateMachineError
 from ..states_enum import StatesEnum
-from ..typings import TCallCoro, TCoroCollection
+from ..typings import TCallback, TCallbackCollection
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
@@ -19,20 +18,20 @@ EXC_TIMEOUT_WITHOUT_TARGET: Final[
 ] = "{base_msg}, but target state not specified"
 
 
-class Callbacks(object):
-    """Класс для запуска задач."""
+class StageCallbacks(object):
+    """Запуск функций для этапа состояния."""
 
     def __init__(
         self,
-        callbacks: TCoroCollection | None,
+        callbacks: TCallbackCollection | None,
         timeout: float | None,
         timeout_to_state: StatesEnum | None,
         name: StatesEnum,
         stage: Literal["on_enter", "on_run", "on_exit"],
-        coro_wrapper: Callable[[TCallCoro], Coroutine[Any, Any, None]],
+        coro_wrapper: Callable[[TCallback], Coroutine[Any, Any, None]],
     ) -> None:
-        """Класс для запуска задач."""
-        self.__callbacks: TCoroCollection | None
+        """Запуск функций для этапа состояния."""
+        self.__callbacks: TCallbackCollection | None
         self.__coro_wrapper: Any
         self.__name: StatesEnum
         self.__timeout: float | None
@@ -56,7 +55,7 @@ class Callbacks(object):
         )
         new_state_data: NewStateData | None = None
         try:
-            await self.__create_taskgroup()
+            await self.__run_taskgroup()
         except* asyncio.TimeoutError:
             self.__except_timeout()
         except* NewStateException as exc:
@@ -70,7 +69,16 @@ class Callbacks(object):
         if new_state_data is not None:
             raise NewStateException.reraise(new_state_data, self.__name)
 
-    async def __create_taskgroup(self) -> None:
+    def config_timeout(
+        self,
+        timeout: float,
+        to_state: StatesEnum | None,
+    ) -> None:
+        """Изменить таймаут на выполнение."""
+        self.__timeout = timeout
+        self.__timeout_to_state = to_state
+
+    async def __run_taskgroup(self) -> None:
         """Запуск."""
         async with asyncio.TaskGroup() as tg:
             self.__create_tasks(tg)
@@ -120,52 +128,3 @@ class Callbacks(object):
             )
             return exc_data
         raise StateMachineError
-
-
-class CallbacksBase(ABC):
-    """Абстрактный класс для запуска задач."""
-
-    def __init__(
-        self,
-        callbacks: TCoroCollection | None,
-        name: StatesEnum,
-        timeout: float | None,
-        timeout_to_state: StatesEnum | None,
-    ) -> None:
-        """Абстрактный класс для запуска задач."""
-        self._callbacks: TCoroCollection | None
-        self._name: StatesEnum
-        self.__timeout: float | None
-        self._timeout_to_state: StatesEnum | None
-
-        self._callbacks = callbacks
-        self._name = name
-        self._timeout_to_state = timeout_to_state
-        self.__timeout = timeout
-
-    async def run(self) -> None:
-        """Запуск."""
-        try:
-            await self.__run_with_timeout()
-        except asyncio.TimeoutError:
-            log.debug(EXC_TIMEOUT.format(name=self._name))
-            self._except_timeout()
-
-    @abstractmethod
-    async def _run(self) -> None:
-        """Запуск."""
-
-    @abstractmethod
-    def _create_tasks(self, tg: asyncio.TaskGroup) -> None:
-        """Создание группы задач."""
-
-    @abstractmethod
-    def _except_timeout(self) -> None:
-        """Обработка превышения времени выполнения."""
-
-    async def __run_with_timeout(self) -> None:
-        if self.__timeout is None:
-            await self._run()
-        else:
-            async with asyncio.timeout(1.0):
-                await self._run()

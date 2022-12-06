@@ -1,6 +1,7 @@
 [flake8]
 exclude = 
-    tests
+    tests,
+    .venv
 ignore =
     D301, # Use r""" if any backslashes in a docstring
     E203, # whitespace before ':'
@@ -23,6 +24,8 @@ nested-classes-whitelist = Config
 statistics = true
 per-file-ignores =
     tests/*:B,D,E,I,N,S,WPS
+    coro_wrappers.py:WPS602
+    state.py:WPS214
 # darglint
 docstring_style = numpy
 strictness = long

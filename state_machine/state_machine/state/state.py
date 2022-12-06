@@ -1,85 +1,78 @@
 """Состояние."""
 
-import asyncio
-from typing import Any, Callable, Final
+from typing import Final, Self
 
 from ..exceptions import NewStateData, NewStateException, StateMachineError
+from ..shared import exc_group_to_exc
 from ..states_enum import StatesEnum
-from ..utils import exc_group_to_exc
-from .callbacks_base import Callbacks, TCoroCollection
 from .coro_wrappers import CoroWrappers
+from .stage_callbacks import StageCallbacks, TCallbackCollection
 
 EXC_NO_ON_RUN: Final[str] = "No callbacks on on_run input, state: {name}"
 EXC_COMPL_NO_NEWSTATE: Final[
     str
 ] = "State '{name}' completed, but NewStateException not raised."
 
-
-def infinite_run_class_method(
-    func: Callable[[Any], Any],
-) -> Callable[[Any], Any]:
-    """Бесконечный запуск для метода в классе."""
-
-    async def wrapper(self: Any, *args: Any, **kwargs: Any) -> None:
-        while True:  # noqa: WPS328
-            await asyncio.sleep(0)
-            return await func(self, *args, **kwargs)
-
-    return wrapper
+DEFAULT_TIMEOUT: Final[float] = 2.0
 
 
 class State(object):
     """Состояние."""
 
-    def __init__(
+    def __init__(  # noqa: WPS211
         self,
         name: StatesEnum,
-        on_run: TCoroCollection,
-        on_enter: TCoroCollection | None = None,
-        on_exit: TCoroCollection | None = None,
-        timeout_on_enter: float | None = 2.0,
-        timeout_on_enter_to_state: StatesEnum | None = None,
-        timeout_on_run: float | None = None,
-        timeout_on_run_to_state: StatesEnum | None = None,
-        timeout_on_exit: float | None = 2.0,
-        timeout_on_exit_to_state: StatesEnum | None = None,
+        on_run: TCallbackCollection,
+        on_enter: TCallbackCollection | None = None,
+        on_exit: TCallbackCollection | None = None,
     ) -> None:
         """Состояние.
 
         Parameters
         ----------
-        timeout_on_enter
-            Ограничение времени on_run. None - без ограничения.
+        name: StatesEnum
+            Название состояния из перечисления
+        on_enter: TCallbackCollection
+            Функции для выполения в стадии on_enter
+        on_run: TCallbackCollection
+            Функции для выполения в стадии on_run
+        on_exit: TCallbackCollection
+            Функции для выполения в стадии on_exit
+
+        Raises
+        ------
+        StateMachineError
+            не указаны задачи on_run
         """
         self.__name: StatesEnum
-        self.__on_enter: Callbacks
-        self.__on_run: Callbacks
-        self.__on_exit: Callbacks
+        self.__on_enter: StageCallbacks
+        self.__on_run: StageCallbacks
+        self.__on_exit: StageCallbacks
         self.__new_state_data: NewStateData | None
 
         if not on_run:
             raise StateMachineError(EXC_NO_ON_RUN.format(name=name))
         self.__name = name
-        self.__on_enter = Callbacks(
+        self.__on_enter = StageCallbacks(
             callbacks=on_enter,
-            timeout=timeout_on_enter,
-            timeout_to_state=timeout_on_enter_to_state,
+            timeout=DEFAULT_TIMEOUT,
+            timeout_to_state=None,
             name=self.__name,
             stage="on_enter",
             coro_wrapper=CoroWrappers.single,
         )
-        self.__on_run = Callbacks(
+        self.__on_run = StageCallbacks(
             callbacks=on_run,
-            timeout=timeout_on_run,
-            timeout_to_state=timeout_on_run_to_state,
+            timeout=None,
+            timeout_to_state=None,
             name=self.__name,
             stage="on_run",
             coro_wrapper=CoroWrappers.infinite,
         )
-        self.__on_exit = Callbacks(
+        self.__on_exit = StageCallbacks(
             callbacks=on_exit,
-            timeout=timeout_on_exit,
-            timeout_to_state=timeout_on_exit_to_state,
+            timeout=DEFAULT_TIMEOUT,
+            timeout_to_state=None,
             name=self.__name,
             stage="on_exit",
             coro_wrapper=CoroWrappers.single,
@@ -104,6 +97,75 @@ class State(object):
             new_state_data=self.__new_state_data,
             active_state=self.__name,
         )
+
+    def config_timeout_on_enter(
+        self,
+        timeout: float,
+        to_state: StatesEnum | None = None,
+    ) -> Self:
+        """Установить таймаут для стадии on_enter.
+
+        Parameters
+        ----------
+        timeout: float
+            время таймаута. По-умолчанию 2.0 c
+        to_state
+            в какое состояние перейти после истечения времени.
+            Если задано None, то возникнет исключение StateMachineError.
+            По-умолчанию None.
+
+        Returns
+        -------
+        Измененный объект состояния
+        """
+        self.__on_enter.config_timeout(timeout, to_state)
+        return self
+
+    def config_timeout_on_run(
+        self,
+        timeout: float,
+        to_state: StatesEnum | None = None,
+    ) -> Self:
+        """Установить таймаут для стадии on_run.
+
+        Parameters
+        ----------
+        timeout: float
+            время таймаута. По-умолчанию ограничений нет.
+        to_state
+            в какое состояние перейти после истечения времени.
+            Если задано None, то возникнет исключение StateMachineError.
+            По-умолчанию None.
+
+        Returns
+        -------
+        Измененный объект состояния
+        """
+        self.__on_run.config_timeout(timeout, to_state)
+        return self
+
+    def config_timeout_on_exit(
+        self,
+        timeout: float,
+        to_state: StatesEnum | None = None,
+    ) -> Self:
+        """Установить таймаут для стадии on_exit.
+
+        Parameters
+        ----------
+        timeout: float
+            время таймаута. По-умолчанию 2.0 c
+        to_state
+            в какое состояние перейти после истечения времени.
+            Если задано None, то возникнет исключение StateMachineError.
+            По-умолчанию None.
+
+        Returns
+        -------
+        Измененный объект состояния
+        """
+        self.__on_exit.config_timeout(timeout, to_state)
+        return self
 
     async def __run_on_enter(self) -> None:
         state_machine_error: str | None = None

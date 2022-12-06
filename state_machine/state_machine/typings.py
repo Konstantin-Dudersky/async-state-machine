@@ -2,6 +2,6 @@
 
 from typing import Callable, Coroutine, Iterable
 
-TCallCoro = Callable[[], Coroutine[None, None, None]]
+TCallback = Callable[[], Coroutine[None, None, None]]
 
-TCoroCollection = Iterable[TCallCoro]
+TCallbackCollection = Iterable[TCallback]

@@ -14,9 +14,8 @@ def test_timeout_exc() -> None:
     state = sm.State(
         name=States.state_1,
         on_enter=[func],
-        timeout_on_enter=0.1,
         on_run=[func],
-    )
+    ).config_timeout_on_enter(0.1)
     try:
         asyncio.run(state.run())
     except sm.StateMachineError as exc:
@@ -33,10 +32,8 @@ def test_timeout_to_state() -> None:
     state = sm.State(
         name=States.state_1,
         on_enter=[func],
-        timeout_on_enter=0.1,
-        timeout_on_enter_to_state=States.state_2,
         on_run=[func],
-    )
+    ).config_timeout_on_enter(0.1, States.state_2)
 
     try:
         asyncio.run(state.run())

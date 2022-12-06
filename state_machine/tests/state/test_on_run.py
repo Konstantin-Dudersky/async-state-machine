@@ -24,8 +24,7 @@ def test_timeout_exc() -> None:
     state = sm.State(
         name=States.state_1,
         on_run=[on_run],
-        timeout_on_run=0.1,
-    )
+    ).config_timeout_on_run(0.1)
 
     try:
         asyncio.run(state.run())
@@ -43,9 +42,7 @@ def test_timeout_to_state() -> None:
     state = sm.State(
         name=States.state_1,
         on_run=[on_run],
-        timeout_on_run=0.1,
-        timeout_on_run_to_state=States.state_2,
-    )
+    ).config_timeout_on_run(0.1, States.state_2)
 
     try:
         asyncio.run(state.run())
