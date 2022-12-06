@@ -3,15 +3,14 @@
 import asyncio
 import logging
 from abc import ABC, abstractmethod
-from typing import Callable, Coroutine, Final, Iterable, Literal
+from typing import Any, Callable, Coroutine, Final, Literal
 
-from ..states_enum import StatesEnum
 from ..exceptions import NewStateData, NewStateException, StateMachineError
+from ..states_enum import StatesEnum
+from ..typings import TCallCoro, TCoroCollection
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
-
-TCollection = Iterable[Callable[[], Coroutine[None, None, None]]]
 
 
 EXC_TIMEOUT: Final[str] = "Timeout occur in state {name}, stage {stage}"
@@ -25,24 +24,27 @@ class Callbacks(object):
 
     def __init__(
         self,
-        callbacks: TCollection | None,
+        callbacks: TCoroCollection | None,
         timeout: float | None,
         timeout_to_state: StatesEnum | None,
         name: StatesEnum,
         stage: Literal["on_enter", "on_run", "on_exit"],
+        coro_wrapper: Callable[[TCallCoro], Coroutine[Any, Any, None]],
     ) -> None:
         """Класс для запуска задач."""
-        self.__callbacks: TCollection | None
+        self.__callbacks: TCoroCollection | None
+        self.__coro_wrapper: Any
         self.__name: StatesEnum
         self.__timeout: float | None
         self.__timeout_to_state: StatesEnum | None
         self.__stage: str
 
         self.__callbacks = callbacks
+        self.__coro_wrapper = coro_wrapper
         self.__name = name
+        self.__stage = stage
         self.__timeout = timeout
         self.__timeout_to_state = timeout_to_state
-        self.__stage = stage
 
     async def run(self) -> None:
         """Запуск."""
@@ -50,7 +52,7 @@ class Callbacks(object):
             "Start state {name}, stage {stage}".format(
                 name=self.__name,
                 stage=self.__stage,
-            )
+            ),
         )
         new_state_data: NewStateData | None = None
         try:
@@ -63,7 +65,7 @@ class Callbacks(object):
             "End state {name}, stage {stage}".format(
                 name=self.__name,
                 stage=self.__stage,
-            )
+            ),
         )
         if new_state_data is not None:
             raise NewStateException.reraise(new_state_data, self.__name)
@@ -78,7 +80,12 @@ class Callbacks(object):
         if self.__callbacks is None:
             return
         for task in self.__callbacks:
-            tg.create_task(asyncio.wait_for(task(), self.__timeout))
+            tg.create_task(
+                asyncio.wait_for(
+                    fut=self.__coro_wrapper(task),
+                    timeout=self.__timeout,
+                ),
+            )
 
     def __except_timeout(self) -> None:
         """Обработка превышения времени выполнения."""
@@ -88,7 +95,7 @@ class Callbacks(object):
                 base_msg=EXC_TIMEOUT.format(
                     name=self.__name,
                     stage=self.__stage,
-                )
+                ),
             )
             log.error(msg)
             raise StateMachineError(msg)
@@ -109,7 +116,7 @@ class Callbacks(object):
                     name=self.__name,
                     stage=self.__stage,
                     new_name=exc_data.new_state,
-                )
+                ),
             )
             return exc_data
         raise StateMachineError
@@ -120,13 +127,13 @@ class CallbacksBase(ABC):
 
     def __init__(
         self,
-        callbacks: TCollection | None,
+        callbacks: TCoroCollection | None,
         name: StatesEnum,
         timeout: float | None,
         timeout_to_state: StatesEnum | None,
     ) -> None:
         """Абстрактный класс для запуска задач."""
-        self._callbacks: TCollection | None
+        self._callbacks: TCoroCollection | None
         self._name: StatesEnum
         self.__timeout: float | None
         self._timeout_to_state: StatesEnum | None

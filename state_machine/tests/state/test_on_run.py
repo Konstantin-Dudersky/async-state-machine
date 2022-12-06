@@ -54,6 +54,8 @@ def test_timeout_to_state() -> None:
 
 
 def test_new_state() -> None:
+    """Переход в новое состояние."""
+
     async def on_run() -> None:
         raise sm.NewStateException(States.state_2)
 
@@ -66,3 +68,29 @@ def test_new_state() -> None:
         asyncio.run(state.run())
     except sm.NewStateException as exc:
         assert exc.exception_data.new_state == States.state_2
+
+
+def test_callback_infinite() -> None:
+    """Функции on_run вызываются в цикле бесконечно."""
+
+    class TestClass:
+        def __init__(self) -> None:
+            self.value: int = 0
+
+        async def on_run(self) -> None:
+            self.value += 1
+            if self.value > 10:
+                raise sm.NewStateException(States.state_2)
+
+    test_class = TestClass()
+
+    state = sm.State(
+        name=States.state_1,
+        on_run=[test_class.on_run],
+    )
+    try:
+        asyncio.run(asyncio.wait_for(state.run(), 0.2))
+    except sm.NewStateException as exc:
+        assert exc.exception_data.new_state == States.state_2
+    except asyncio.TimeoutError:
+        assert False

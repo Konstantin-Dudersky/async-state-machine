@@ -11,6 +11,7 @@ class States(sm.StatesEnum):
 
     state_1 = sm.enum_auto()
     state_2 = sm.enum_auto()
+    state_3 = sm.enum_auto()
 
 
 def test_move_between_states() -> None:
@@ -20,8 +21,10 @@ def test_move_between_states() -> None:
         raise sm.NewStateException(States.state_2)
 
     async def on_run_state_2() -> None:
-        while True:
-            await asyncio.sleep(2)
+        raise sm.NewStateException(States.state_3)
+
+    async def on_run_state_3() -> None:
+        await asyncio.sleep(10)
 
     state_machine = sm.StateMachine(
         states={
@@ -32,6 +35,10 @@ def test_move_between_states() -> None:
             sm.State(
                 name=States.state_2,
                 on_run=[on_run_state_2],
+            ),
+            sm.State(
+                name=States.state_3,
+                on_run=[on_run_state_3],
             ),
         },
         states_enum=States,
@@ -46,7 +53,7 @@ def test_move_between_states() -> None:
 
     asyncio.run(run())
 
-    assert state_machine.active_state.name == States.state_2
+    assert state_machine.active_state.name == States.state_3
 
 
 def test_exc_name_not_found() -> None:
@@ -66,6 +73,10 @@ def test_exc_name_not_found() -> None:
             ),
             sm.State(
                 name=States.state_2,
+                on_run=[on_run_state_2],
+            ),
+            sm.State(
+                name=States.state_3,
                 on_run=[on_run_state_2],
             ),
         },

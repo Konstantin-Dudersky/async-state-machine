@@ -6,7 +6,8 @@ from typing import Any, Callable, Final
 from ..exceptions import NewStateData, NewStateException, StateMachineError
 from ..states_enum import StatesEnum
 from ..utils import exc_group_to_exc
-from .callbacks_base import Callbacks, TCollection
+from .callbacks_base import Callbacks, TCoroCollection
+from .coro_wrappers import CoroWrappers
 
 EXC_NO_ON_RUN: Final[str] = "No callbacks on on_run input, state: {name}"
 EXC_COMPL_NO_NEWSTATE: Final[
@@ -33,9 +34,9 @@ class State(object):
     def __init__(
         self,
         name: StatesEnum,
-        on_run: TCollection,
-        on_enter: TCollection | None = None,
-        on_exit: TCollection | None = None,
+        on_run: TCoroCollection,
+        on_enter: TCoroCollection | None = None,
+        on_exit: TCoroCollection | None = None,
         timeout_on_enter: float | None = 2.0,
         timeout_on_enter_to_state: StatesEnum | None = None,
         timeout_on_run: float | None = None,
@@ -65,6 +66,7 @@ class State(object):
             timeout_to_state=timeout_on_enter_to_state,
             name=self.__name,
             stage="on_enter",
+            coro_wrapper=CoroWrappers.single,
         )
         self.__on_run = Callbacks(
             callbacks=on_run,
@@ -72,6 +74,7 @@ class State(object):
             timeout_to_state=timeout_on_run_to_state,
             name=self.__name,
             stage="on_run",
+            coro_wrapper=CoroWrappers.infinite,
         )
         self.__on_exit = Callbacks(
             callbacks=on_exit,
@@ -79,6 +82,7 @@ class State(object):
             timeout_to_state=timeout_on_exit_to_state,
             name=self.__name,
             stage="on_exit",
+            coro_wrapper=CoroWrappers.single,
         )
         self.__new_state_data = None
 

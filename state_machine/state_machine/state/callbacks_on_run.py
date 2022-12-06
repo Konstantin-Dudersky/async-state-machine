@@ -6,7 +6,7 @@ from typing import Callable, Coroutine
 
 from ..exceptions import NewStateData, NewStateException, StateMachineError
 from ..states_enum import StatesEnum
-from .callbacks_base import CallbacksBase, TCollection
+from .callbacks_base import CallbacksBase, TCoroCollection
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
@@ -15,10 +15,17 @@ log.setLevel(logging.DEBUG)
 async def make_coro_infinite(
     coro_func: Callable[[], Coroutine[None, None, None]],
 ) -> None:
-    """Сделать корутину бесконечно вызываемой."""
-    while True:
+    """Корутина вызывается в цикле бесконечно."""
+    while True:  # noqa: WPS457
         await coro_func()
         await asyncio.sleep(0)
+
+
+async def single_run(
+    coro_func: Callable[[], Coroutine[None, None, None]],
+) -> None:
+    """Корутина вызывается один раз."""
+    await coro_func()
 
 
 class CallbacksOnRun(CallbacksBase):
@@ -26,7 +33,7 @@ class CallbacksOnRun(CallbacksBase):
 
     def __init__(
         self,
-        callbacks: TCollection | None,
+        callbacks: TCoroCollection | None,
         name: StatesEnum,
         timeout: float | None,
         timeout_to_state: StatesEnum | None,

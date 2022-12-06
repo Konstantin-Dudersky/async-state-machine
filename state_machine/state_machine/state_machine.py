@@ -1,5 +1,6 @@
 """Диаграмма состояний."""
 
+import asyncio
 from typing import Final, Iterable, Type
 
 from .exceptions import NewStateException, StateMachineError
@@ -37,11 +38,13 @@ class StateMachine(object):
 
     async def run(self) -> None:
         """Задача для асинхронного выполнения."""
-        try:
-            await self.__active_state.run()
-        except NewStateException as exc:
-            new_state = exc.exception_data.new_state
-            self.__active_state = self.__find_state_by_name(new_state)
+        while True:
+            try:
+                await self.__active_state.run()
+            except NewStateException as exc:
+                new_state = exc.exception_data.new_state
+                self.__active_state = self.__find_state_by_name(new_state)
+            await asyncio.sleep(0)
 
     def __set_init_state(self, init_state: StatesEnum) -> State:
         for state in self.__states:
