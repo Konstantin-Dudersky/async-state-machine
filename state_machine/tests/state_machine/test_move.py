@@ -3,6 +3,8 @@ import pytest
 
 import state_machine as sm
 
+from state_machine.state_machine import EXC_NAME_NOT_FOUND
+
 
 class States(sm.StatesEnum):
     """Перечень состояний."""
@@ -37,9 +39,8 @@ def test_move_between_states() -> None:
     )
 
     async def run():
-        task = state_machine.run()
         try:
-            await asyncio.wait_for(task, 0.1)
+            await asyncio.wait_for(state_machine.run(), 0.2)
         except asyncio.TimeoutError:
             pass
 
@@ -73,4 +74,4 @@ def test_exc_name_not_found() -> None:
     )
     with pytest.raises(sm.StateMachineError) as exc:
         asyncio.run(state_machine.run())
-    assert str(exc.value) == "State with name UNKNOWN_STATE not found."
+    assert str(exc.value) == EXC_NAME_NOT_FOUND.format(name="UNKNOWN_STATE")

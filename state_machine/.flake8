@@ -22,7 +22,7 @@ multi-line-output-modes = 3
 nested-classes-whitelist = Config
 statistics = true
 per-file-ignores =
-    tests/*:*
+    tests/*:WPS,D,E,I,S
 # darglint
 docstring_style = numpy
 strictness = long

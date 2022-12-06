@@ -1,6 +1,5 @@
 import asyncio
 
-import pytest
 import state_machine as sm
 
 
@@ -45,19 +44,3 @@ def test_all_callbacks_executed() -> None:
         assert False
     if not test_class.on_exit_executed:
         assert False
-
-
-def test_on_run_no_newstateexception() -> None:
-    """on_run выполнился, но не было исключения."""
-
-    async def wrong_on_run():
-        pass
-
-    state_machine = sm.State(
-        name=States.state_1,
-        on_run=[],
-    )
-    asyncio.run(state_machine.run())
-    # with pytest.raises(sm.StateMachineError) as exc:
-    #     asyncio.run(state_machine.run())
-    # assert str(exc.value) == "State with name UNKNOWN_STATE not found."

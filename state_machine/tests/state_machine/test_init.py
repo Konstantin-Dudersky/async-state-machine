@@ -1,6 +1,10 @@
+import asyncio
 import pytest
 
 import state_machine as sm
+
+
+from state_machine.state_machine import EXC_NOT_USED_STATES, EXC_REUSE_STATE
 
 
 class States(sm.StatesEnum):
@@ -12,55 +16,71 @@ class States(sm.StatesEnum):
 
 def test_exc_not_all_states() -> None:
     """Определены не все состояния."""
+
+    async def on_run():
+        await asyncio.sleep(10)
+
     with pytest.raises(sm.StateMachineError) as exc:
         sm.StateMachine(
             states={
                 sm.State(
                     name=States.state_1,
-                    on_run=[],
+                    on_run=[on_run],
                 ),
             },
             states_enum=States,
             init_state=States.state_1,
         )
-    assert str(exc.value) == "Need to define states: {'state_2'}"
+    assert exc.value.message == EXC_NOT_USED_STATES.format(
+        states={States.state_2.value},
+    )
 
 
 def test_exc_reuse_names() -> None:
     """Дублирование названий."""
+
+    async def on_run():
+        pass
+
     with pytest.raises(sm.StateMachineError) as exc:
         sm.StateMachine(
             states={
                 sm.State(
                     name=States.state_1,
-                    on_run=[],
+                    on_run=[on_run],
                 ),
                 sm.State(
                     name=States.state_1,
-                    on_run=[],
+                    on_run=[on_run],
                 ),
                 sm.State(
                     name=States.state_2,
-                    on_run=[],
+                    on_run=[on_run],
                 ),
             },
             states_enum=States,
             init_state=States.state_1,
         )
-    assert str(exc.value) == "Several use state with name: state_1"
+    assert exc.value.message == EXC_REUSE_STATE.format(
+        name=States.state_1,
+    )
 
 
 def test_init_state() -> None:
     """Начальное состояние устанавливается правильно."""
+
+    async def on_run():
+        pass
+
     state_machine = sm.StateMachine(
         states={
             sm.State(
                 name=States.state_1,
-                on_run=[],
+                on_run=[on_run],
             ),
             sm.State(
                 name=States.state_2,
-                on_run=[],
+                on_run=[on_run],
             ),
         },
         states_enum=States,

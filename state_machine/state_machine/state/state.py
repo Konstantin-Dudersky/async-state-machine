@@ -5,10 +5,13 @@ from typing import Any, Callable, Final
 
 from ..exceptions import NewStateData, NewStateException, StateMachineError
 from ..states_enum import StatesEnum
-from .callbacks_base import TCollection, Callbacks
-
+from ..utils import exc_group_to_exc
+from .callbacks_base import Callbacks, TCollection
 
 EXC_NO_ON_RUN: Final[str] = "No callbacks on on_run input, state: {name}"
+EXC_COMPL_NO_NEWSTATE: Final[
+    str
+] = "State '{name}' completed, but NewStateException not raised."
 
 
 def infinite_run_class_method(
@@ -88,31 +91,47 @@ class State(object):
         """Задача для асинхронного выполнения, вызывается из StateMachine."""
         await self.__run_on_enter()
         await self.__run_on_run()
-        await asyncio.sleep(1)
         await self.__run_on_exit()
         if self.__new_state_data is None:
-            raise StateMachineError
+            raise StateMachineError(
+                EXC_COMPL_NO_NEWSTATE.format(name=self.__name),
+            )
         raise NewStateException.reraise(
             new_state_data=self.__new_state_data,
             active_state=self.__name,
         )
 
     async def __run_on_enter(self) -> None:
+        state_machine_error: str | None = None
         try:
             await self.__on_enter.run()
-        except NewStateException as exc:
-            self.__new_state_data = exc.exception_data
+        except* NewStateException as exc_gr:
+            self.__new_state_data = exc_group_to_exc(exc_gr).exception_data
+        except* StateMachineError as exc_gr:
+            state_machine_error = exc_group_to_exc(exc_gr).message
+        if state_machine_error is not None:
+            raise StateMachineError(state_machine_error)
 
     async def __run_on_run(self) -> None:
         if self.__new_state_data is not None:
             return
+        state_machine_error: str | None = None
         try:
             await self.__on_run.run()
-        except NewStateException as exc:
-            self.__new_state_data = exc.exception_data
+        except* NewStateException as exc_gr:
+            self.__new_state_data = exc_group_to_exc(exc_gr).exception_data
+        except* StateMachineError as exc_gr:
+            state_machine_error = exc_group_to_exc(exc_gr).message
+        if state_machine_error is not None:
+            raise StateMachineError(state_machine_error)
 
     async def __run_on_exit(self) -> None:
+        state_machine_error: str | None = None
         try:
             await self.__on_exit.run()
-        except NewStateException as exc:
-            self.__new_state_data = exc.exception_data
+        except* NewStateException as exc_gr:
+            self.__new_state_data = exc_group_to_exc(exc_gr).exception_data
+        except* StateMachineError as exc_gr:
+            state_machine_error = exc_group_to_exc(exc_gr).message
+        if state_machine_error is not None:
+            raise StateMachineError(state_machine_error)
