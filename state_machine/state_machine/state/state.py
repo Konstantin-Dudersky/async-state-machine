@@ -1,5 +1,6 @@
 """Состояние."""
 
+import logging
 from typing import Final, Self
 
 from ..exceptions import NewStateData, NewStateException, StateMachineError
@@ -14,6 +15,10 @@ EXC_COMPL_NO_NEWSTATE: Final[
 ] = "State '{name}' completed, but NewStateException not raised."
 
 DEFAULT_TIMEOUT: Final[float] = 2.0
+
+
+log = logging.getLogger(__name__)
+log.setLevel(logging.INFO)
 
 
 class State(object):
@@ -165,6 +170,14 @@ class State(object):
         Измененный объект состояния
         """
         self.__on_exit.config_timeout(timeout, to_state)
+        return self
+
+    def config_logging(self, logging_level: int) -> Self:
+        """Конфигурировать уровень логгирования."""
+        log.setLevel(logging_level)
+        self.__on_enter.config_logging(logging_level)
+        self.__on_run.config_logging(logging_level)
+        self.__on_exit.config_logging(logging_level)
         return self
 
     async def __run_on_enter(self) -> None:

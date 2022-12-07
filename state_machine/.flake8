@@ -29,3 +29,4 @@ per-file-ignores =
 # darglint
 docstring_style = numpy
 strictness = long
+max-methods=10

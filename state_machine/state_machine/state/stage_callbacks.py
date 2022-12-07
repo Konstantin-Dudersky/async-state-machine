@@ -2,14 +2,14 @@
 
 import asyncio
 import logging
-from typing import Any, Callable, Coroutine, Final, Literal
+from typing import Any, Callable, Coroutine, Final, Literal, Self
 
 from ..exceptions import NewStateData, NewStateException, StateMachineError
 from ..states_enum import StatesEnum
 from ..typings import TCallback, TCallbackCollection
 
 log = logging.getLogger(__name__)
-log.setLevel(logging.DEBUG)
+log.setLevel(logging.INFO)
 
 
 EXC_TIMEOUT: Final[str] = "Timeout occur in state {name}, stage {stage}"
@@ -73,10 +73,16 @@ class StageCallbacks(object):
         self,
         timeout: float,
         to_state: StatesEnum | None,
-    ) -> None:
+    ) -> Self:
         """Изменить таймаут на выполнение."""
         self.__timeout = timeout
         self.__timeout_to_state = to_state
+        return self
+
+    def config_logging(self, logging_level: int) -> Self:
+        """Конфигурировать уровень логгирования."""
+        log.setLevel(logging_level)
+        return self
 
     async def __run_taskgroup(self) -> None:
         """Запуск."""
