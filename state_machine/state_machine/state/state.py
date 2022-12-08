@@ -1,19 +1,16 @@
-"""Состояние."""
+"""Строитель для создания State."""
 
 import logging
+from dataclasses import dataclass
 from typing import Final, Self
 
-from ..exceptions import NewStateData, NewStateException, StateMachineError
-from ..shared import exc_group_to_exc
+from ..exceptions import StateMachineError
 from ..states_enum import StatesEnum
 from .coro_wrappers import CoroWrappers
 from .stage_callbacks import StageCallbacks, TCallbackCollection
+from .state_runner import StateRunner
 
 EXC_NO_ON_RUN: Final[str] = "No callbacks on on_run input, state: {name}"
-EXC_COMPL_NO_NEWSTATE: Final[
-    str
-] = "State '{name}' completed, but NewStateException not raised."
-
 DEFAULT_TIMEOUT: Final[float] = 2.0
 
 
@@ -21,8 +18,15 @@ log = logging.getLogger(__name__)
 log.setLevel(logging.INFO)
 
 
+@dataclass
+class _StageData(object):
+    callbacks: TCallbackCollection | None
+    timeout: float | None
+    timeout_to_state: StatesEnum | None
+
+
 class State(object):
-    """Состояние."""
+    """Строитель для создания State."""
 
     def __init__(  # noqa: WPS211
         self,
@@ -31,7 +35,7 @@ class State(object):
         on_enter: TCallbackCollection | None = None,
         on_exit: TCallbackCollection | None = None,
     ) -> None:
-        """Состояние.
+        """Строитель для создания State.
 
         Parameters
         ----------
@@ -50,58 +54,30 @@ class State(object):
             не указаны задачи on_run
         """
         self.__name: StatesEnum
-        self.__on_enter: StageCallbacks
-        self.__on_run: StageCallbacks
-        self.__on_exit: StageCallbacks
-        self.__new_state_data: NewStateData | None
+        self.__on_enter: _StageData
+        self.__on_run: _StageData
+        self.__on_exit: _StageData
+        self.__logging_level: int
 
         if not on_run:
             raise StateMachineError(EXC_NO_ON_RUN.format(name=name))
         self.__name = name
-        self.__on_enter = StageCallbacks(
+        self.__on_enter = _StageData(
             callbacks=on_enter,
             timeout=DEFAULT_TIMEOUT,
             timeout_to_state=None,
-            name=self.__name,
-            stage="on_enter",
-            coro_wrapper=CoroWrappers.single,
         )
-        self.__on_run = StageCallbacks(
+        self.__on_run = _StageData(
             callbacks=on_run,
             timeout=None,
             timeout_to_state=None,
-            name=self.__name,
-            stage="on_run",
-            coro_wrapper=CoroWrappers.infinite,
         )
-        self.__on_exit = StageCallbacks(
+        self.__on_exit = _StageData(
             callbacks=on_exit,
             timeout=DEFAULT_TIMEOUT,
             timeout_to_state=None,
-            name=self.__name,
-            stage="on_exit",
-            coro_wrapper=CoroWrappers.single,
         )
-        self.__new_state_data = None
-
-    @property
-    def name(self) -> StatesEnum:
-        """Имя состояния."""
-        return self.__name
-
-    async def run(self) -> None:
-        """Задача для асинхронного выполнения, вызывается из StateMachine."""
-        await self.__run_on_enter()
-        await self.__run_on_run()
-        await self.__run_on_exit()
-        if self.__new_state_data is None:
-            raise StateMachineError(
-                EXC_COMPL_NO_NEWSTATE.format(name=self.__name),
-            )
-        raise NewStateException.reraise(
-            new_state_data=self.__new_state_data,
-            active_state=self.__name,
-        )
+        self.__logging_level = logging.INFO
 
     def config_timeout_on_enter(
         self,
@@ -123,7 +99,8 @@ class State(object):
         -------
         Измененный объект состояния
         """
-        self.__on_enter.config_timeout(timeout, to_state)
+        self.__on_enter.timeout = timeout
+        self.__on_enter.timeout_to_state = to_state
         return self
 
     def config_timeout_on_run(
@@ -146,7 +123,8 @@ class State(object):
         -------
         Измененный объект состояния
         """
-        self.__on_run.config_timeout(timeout, to_state)
+        self.__on_run.timeout = timeout
+        self.__on_run.timeout_to_state = to_state
         return self
 
     def config_timeout_on_exit(
@@ -169,48 +147,47 @@ class State(object):
         -------
         Измененный объект состояния
         """
-        self.__on_exit.config_timeout(timeout, to_state)
+        self.__on_exit.timeout = timeout
+        self.__on_exit.timeout_to_state = to_state
         return self
 
     def config_logging(self, logging_level: int) -> Self:
         """Конфигурировать уровень логгирования."""
         log.setLevel(logging_level)
-        self.__on_enter.config_logging(logging_level)
-        self.__on_run.config_logging(logging_level)
-        self.__on_exit.config_logging(logging_level)
         return self
 
-    async def __run_on_enter(self) -> None:
-        state_machine_error: str | None = None
-        try:
-            await self.__on_enter.run()
-        except* NewStateException as exc_gr:
-            self.__new_state_data = exc_group_to_exc(exc_gr).exception_data
-        except* StateMachineError as exc_gr:
-            state_machine_error = exc_group_to_exc(exc_gr).message
-        if state_machine_error is not None:
-            raise StateMachineError(state_machine_error)
+    def build(self) -> StateRunner:
+        """Создание состояния.
 
-    async def __run_on_run(self) -> None:
-        if self.__new_state_data is not None:
-            return
-        state_machine_error: str | None = None
-        try:
-            await self.__on_run.run()
-        except* NewStateException as exc_gr:
-            self.__new_state_data = exc_group_to_exc(exc_gr).exception_data
-        except* StateMachineError as exc_gr:
-            state_machine_error = exc_group_to_exc(exc_gr).message
-        if state_machine_error is not None:
-            raise StateMachineError(state_machine_error)
-
-    async def __run_on_exit(self) -> None:
-        state_machine_error: str | None = None
-        try:
-            await self.__on_exit.run()
-        except* NewStateException as exc_gr:
-            self.__new_state_data = exc_group_to_exc(exc_gr).exception_data
-        except* StateMachineError as exc_gr:
-            state_machine_error = exc_group_to_exc(exc_gr).message
-        if state_machine_error is not None:
-            raise StateMachineError(state_machine_error)
+        Вызывается из StateMachine.
+        """
+        return StateRunner(
+            name=self.__name,
+            on_enter=StageCallbacks(
+                callbacks=self.__on_enter.callbacks,
+                timeout=self.__on_enter.timeout,
+                timeout_to_state=self.__on_enter.timeout_to_state,
+                name=self.__name,
+                stage="on_enter",
+                coro_wrapper=CoroWrappers.single,
+                logging_level=self.__logging_level,
+            ),
+            on_run=StageCallbacks(
+                callbacks=self.__on_run.callbacks,
+                timeout=self.__on_run.timeout,
+                timeout_to_state=self.__on_run.timeout_to_state,
+                name=self.__name,
+                stage="on_run",
+                coro_wrapper=CoroWrappers.infinite,
+                logging_level=self.__logging_level,
+            ),
+            on_exit=StageCallbacks(
+                callbacks=self.__on_exit.callbacks,
+                timeout=self.__on_exit.timeout,
+                timeout_to_state=self.__on_exit.timeout_to_state,
+                name=self.__name,
+                stage="on_exit",
+                coro_wrapper=CoroWrappers.single,
+                logging_level=self.__logging_level,
+            ),
+        )

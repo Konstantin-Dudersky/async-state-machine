@@ -21,10 +21,14 @@ def test_timeout_exc() -> None:
     async def on_run() -> None:
         await asyncio.sleep(1000)
 
-    state = sm.State(
-        name=States.state_1,
-        on_run=[on_run],
-    ).config_timeout_on_run(0.1)
+    state = (
+        sm.State(
+            name=States.state_1,
+            on_run=[on_run],
+        )
+        .config_timeout_on_run(0.1)
+        .build()
+    )
 
     try:
         asyncio.run(state.run())
@@ -39,10 +43,14 @@ def test_timeout_to_state() -> None:
     async def on_run() -> None:
         await asyncio.sleep(1000)
 
-    state = sm.State(
-        name=States.state_1,
-        on_run=[on_run],
-    ).config_timeout_on_run(0.1, States.state_2)
+    state = (
+        sm.State(
+            name=States.state_1,
+            on_run=[on_run],
+        )
+        .config_timeout_on_run(0.1, States.state_2)
+        .build()
+    )
 
     try:
         asyncio.run(state.run())
@@ -59,7 +67,7 @@ def test_new_state() -> None:
     state = sm.State(
         name=States.state_1,
         on_run=[on_run],
-    )
+    ).build()
 
     try:
         asyncio.run(state.run())
@@ -84,7 +92,8 @@ def test_callback_infinite() -> None:
     state = sm.State(
         name=States.state_1,
         on_run=[test_class.on_run],
-    )
+    ).build()
+
     try:
         asyncio.run(asyncio.wait_for(state.run(), 0.2))
     except sm.NewStateException as exc:

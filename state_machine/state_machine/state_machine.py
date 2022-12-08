@@ -5,7 +5,7 @@ import logging
 from typing import Final, Iterable, Self, Type
 
 from .exceptions import NewStateException, StateMachineError
-from .state import State
+from .state import State, StateRunner
 from .states_enum import StatesEnum
 
 EXC_NAME_NOT_FOUND: Final[str] = "State with name {name} not found."
@@ -27,17 +27,17 @@ class StateMachine(object):
         init_state: StatesEnum,
     ) -> None:
         """Определение диаграммы состояний."""
-        self.__active_state: State
+        self.__active_state: StateRunner
         self.__state_names: set[str]
-        self.__states: Iterable[State]
+        self.__states: Iterable[StateRunner]
 
-        self.__states = states
+        self.__states = [state.build() for state in states]
         self.__state_names = {state.value for state in states_enum}
         self.__check_state_names()
         self.__active_state = self.__set_init_state(init_state)
 
     @property
-    def active_state(self) -> State:
+    def active_state(self) -> StateRunner:
         """Активное состояние."""
         return self.__active_state
 
@@ -58,7 +58,7 @@ class StateMachine(object):
             state.config_logging(logging_level)
         return self
 
-    def __set_init_state(self, init_state: StatesEnum) -> State:
+    def __set_init_state(self, init_state: StatesEnum) -> StateRunner:
         for state in self.__states:
             if state.name == init_state:
                 return state
@@ -83,7 +83,7 @@ class StateMachine(object):
             names.add(name)
         return names
 
-    def __find_state_by_name(self, name: StatesEnum) -> State:
+    def __find_state_by_name(self, name: StatesEnum) -> StateRunner:
         for state in self.__states:
             if state.name == name:
                 return state

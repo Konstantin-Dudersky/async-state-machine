@@ -17,11 +17,15 @@ def test_timeout_exc() -> None:
     async def on_exit() -> None:
         await asyncio.sleep(10)
 
-    state = sm.State(
-        name=States.state_1,
-        on_run=[on_run],
-        on_exit=[on_exit],
-    ).config_timeout_on_exit(1.0)
+    state = (
+        sm.State(
+            name=States.state_1,
+            on_run=[on_run],
+            on_exit=[on_exit],
+        )
+        .config_timeout_on_exit(1.0)
+        .build()
+    )
 
     try:
         asyncio.run(state.run())
@@ -39,11 +43,15 @@ def test_timeout_to_state() -> None:
     async def on_exit() -> None:
         await asyncio.sleep(1000)
 
-    state = sm.State(
-        name=States.state_1,
-        on_run=[on_run],
-        on_exit=[on_exit],
-    ).config_timeout_on_exit(0.1, States.state_2)
+    state = (
+        sm.State(
+            name=States.state_1,
+            on_run=[on_run],
+            on_exit=[on_exit],
+        )
+        .config_timeout_on_exit(0.1, States.state_2)
+        .build()
+    )
 
     try:
         asyncio.run(state.run())
@@ -67,7 +75,8 @@ def test_new_state() -> None:
         name=States.state_1,
         on_run=[on_run],
         on_exit=[on_exit],
-    )
+    ).build()
+
     with pytest.raises(sm.NewStateException) as exc:
         asyncio.run(state.run())
     assert exc.value.exception_data.new_state == States.state_3

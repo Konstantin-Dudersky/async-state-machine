@@ -28,14 +28,15 @@ class TestClass:
 def test_all_callbacks_executed() -> None:
     """Все коллбеки выполняются."""
     test_class = TestClass()
-    state_machine = sm.State(
+    state = sm.State(
         name=States.state_1,
         on_enter=[test_class.on_enter],
         on_run=[test_class.on_run],
         on_exit=[test_class.on_exit],
-    )
+    ).build()
+
     try:
-        asyncio.run(state_machine.run())
+        asyncio.run(state.run())
     except sm.NewStateException:
         pass
     if not test_class.on_enter_executed:

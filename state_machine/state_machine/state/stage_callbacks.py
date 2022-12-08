@@ -29,8 +29,10 @@ class StageCallbacks(object):
         name: StatesEnum,
         stage: Literal["on_enter", "on_run", "on_exit"],
         coro_wrapper: Callable[[TCallback], Coroutine[Any, Any, None]],
+        logging_level: int = logging.INFO,
     ) -> None:
         """Запуск функций для этапа состояния."""
+        log.setLevel(logging_level)
         self.__callbacks: TCallbackCollection | None
         self.__coro_wrapper: Any
         self.__name: StatesEnum
@@ -68,16 +70,6 @@ class StageCallbacks(object):
         )
         if new_state_data is not None:
             raise NewStateException.reraise(new_state_data, self.__name)
-
-    def config_timeout(
-        self,
-        timeout: float,
-        to_state: StatesEnum | None,
-    ) -> Self:
-        """Изменить таймаут на выполнение."""
-        self.__timeout = timeout
-        self.__timeout_to_state = to_state
-        return self
 
     def config_logging(self, logging_level: int) -> Self:
         """Конфигурировать уровень логгирования."""
