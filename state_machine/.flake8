@@ -25,8 +25,8 @@ statistics = true
 per-file-ignores =
     tests/*:B,D,E,I,N,S,WPS
     coro_wrappers.py:WPS602
-    state.py:WPS214
+    state_machine.py:WPS214
+
 # darglint
 docstring_style = numpy
 strictness = long
-max-methods=10
