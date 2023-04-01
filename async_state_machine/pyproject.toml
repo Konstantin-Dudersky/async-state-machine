@@ -8,16 +8,16 @@ line-length = 80
 
 
 [tool.poetry]
-name = "state_machine"
+name = "async_state_machine"
 version = "0.1.0"
 description = ""
 authors = ["konstantin-dudersky <konstantin.dudersky@gmail.com>"]
 readme = "README.md"
-packages = [{ include = "state_machine" }]
+packages = [{ include = "async_state_machine" }]
 
 
 [tool.poetry.dependencies]
-python = "3.11"
+python = "3.11.*"
 
 
 [tool.poetry.group.dev.dependencies]

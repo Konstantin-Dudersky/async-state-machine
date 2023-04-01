@@ -1,7 +1,7 @@
 import asyncio
 
 import pytest
-import state_machine as sm
+import async_state_machine as sm
 
 
 class States(sm.StatesEnum):

@@ -1,10 +1,13 @@
 import asyncio
 import pytest
 
-import state_machine as sm
+import async_state_machine as sm
 
 
-from state_machine.state_machine import EXC_NOT_USED_STATES, EXC_REUSE_STATE
+from async_state_machine.state_machine import (
+    EXC_NOT_USED_STATES,
+    EXC_REUSE_STATE,
+)
 
 
 class States(sm.StatesEnum):

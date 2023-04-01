@@ -46,6 +46,7 @@ class StateRunner(object):
 
     async def run(self) -> None:
         """Задача для асинхронного выполнения, вызывается из StateMachine."""
+        self.__new_state_data = None
         await self.__run_on_enter()
         await self.__run_on_run()
         await self.__run_on_exit()

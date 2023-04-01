@@ -12,7 +12,7 @@ log = logging.getLogger(__name__)
 log.setLevel(logging.INFO)
 
 
-EXC_TIMEOUT: Final[str] = "Timeout occur in state {name}, stage {stage}"
+EXC_TIMEOUT: Final[str] = "Timeout occur in state: {name}, stage: {stage}"
 EXC_TIMEOUT_WITHOUT_TARGET: Final[
     str
 ] = "{base_msg}, but target state not specified"
