@@ -26,8 +26,6 @@ def test_move_between_states() -> None:
     async def on_run_state_3() -> None:
         await asyncio.sleep(10)
 
-    import logging
-
     state_machine = sm.StateMachine(
         states={
             sm.State(
@@ -45,7 +43,7 @@ def test_move_between_states() -> None:
         },
         states_enum=States,
         init_state=States.state_1,
-    ).config_logging(logging.DEBUG)
+    )
 
     async def run():
         try:

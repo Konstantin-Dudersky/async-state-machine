@@ -1,18 +1,16 @@
 """Запуск функций для этапа состояния."""
 
 import asyncio
-import logging
 from typing import Any, Callable, Coroutine, Final, Literal, Self
+
+from loguru import logger
 
 from ..exceptions import NewStateData, NewStateException, StateMachineError
 from ..states_enum import StatesEnum
 from ..typings import TCallback, TCallbackCollection
 
-log = logging.getLogger(__name__)
-log.setLevel(logging.INFO)
 
-
-EXC_TIMEOUT: Final[str] = "Timeout occur in state: {name}, stage: {stage}"
+EXC_TIMEOUT: Final[str] = "Timeout occur {name}|{stage}"
 EXC_TIMEOUT_WITHOUT_TARGET: Final[
     str
 ] = "{base_msg}, but target state not specified"
@@ -29,10 +27,9 @@ class StageCallbacks(object):
         name: StatesEnum,
         stage: Literal["on_enter", "on_run", "on_exit"],
         coro_wrapper: Callable[[TCallback], Coroutine[Any, Any, None]],
-        logging_level: int = logging.INFO,
+        logging_level: int = 0,  # TODO - remove
     ) -> None:
         """Запуск функций для этапа состояния."""
-        log.setLevel(logging_level)
         self.__callbacks: TCallbackCollection | None
         self.__coro_wrapper: Any
         self.__name: StatesEnum
@@ -49,8 +46,8 @@ class StageCallbacks(object):
 
     async def run(self) -> None:
         """Запуск."""
-        log.debug(
-            "Start state {name}, stage {stage}".format(
+        logger.debug(
+            "{name}|{stage}|start".format(
                 name=self.__name,
                 stage=self.__stage,
             ),
@@ -62,8 +59,8 @@ class StageCallbacks(object):
             self.__except_timeout()
         except* NewStateException as exc:
             new_state_data = self.__except_new_state(exc)
-        log.debug(
-            "End state {name}, stage {stage}".format(
+        logger.debug(
+            "{name}|{stage}|end".format(
                 name=self.__name,
                 stage=self.__stage,
             ),
@@ -72,8 +69,11 @@ class StageCallbacks(object):
             raise NewStateException.reraise(new_state_data, self.__name)
 
     def config_logging(self, logging_level: int) -> Self:
-        """Конфигурировать уровень логгирования."""
-        log.setLevel(logging_level)
+        """Конфигурировать уровень логгирования.
+
+        TODO - remove
+        """
+        # log.setLevel(logging_level)
         return self
 
     async def __run_taskgroup(self) -> None:
@@ -95,7 +95,7 @@ class StageCallbacks(object):
 
     def __except_timeout(self) -> None:
         """Обработка превышения времени выполнения."""
-        log.debug(EXC_TIMEOUT.format(name=self.__name, stage=self.__stage))
+        logger.debug(EXC_TIMEOUT.format(name=self.__name, stage=self.__stage))
         if self.__timeout_to_state is None:
             msg = EXC_TIMEOUT_WITHOUT_TARGET.format(
                 base_msg=EXC_TIMEOUT.format(
@@ -103,7 +103,7 @@ class StageCallbacks(object):
                     stage=self.__stage,
                 ),
             )
-            log.error(msg)
+            logger.error(msg)
             raise StateMachineError(msg)
         raise NewStateException(
             new_state=self.__timeout_to_state,
@@ -117,7 +117,7 @@ class StageCallbacks(object):
         new_state_data = exc.exceptions[0]
         if isinstance(new_state_data, NewStateException):
             exc_data = new_state_data.exception_data
-            log.debug(
+            logger.debug(
                 "State {name}, stage {stage}, new state: {new_name}".format(
                     name=self.__name,
                     stage=self.__stage,

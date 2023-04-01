@@ -1,7 +1,6 @@
 """Диаграмма состояний."""
 
 import asyncio
-import logging
 from typing import Final, Iterable, Self, Type
 
 from .exceptions import NewStateException, StateMachineError
@@ -11,9 +10,6 @@ from .states_enum import StatesEnum
 EXC_NAME_NOT_FOUND: Final[str] = "State with name {name} not found."
 EXC_NOT_USED_STATES: Final[str] = "Need to define states: {states}"
 EXC_REUSE_STATE: Final[str] = "Several use state with name: {name}"
-
-
-log = logging.getLogger(__name__)
 
 
 class StateMachine(object):
@@ -52,7 +48,7 @@ class StateMachine(object):
 
     def config_logging(self, logging_level: int) -> Self:
         """Конфигурировать уровень логгирования."""
-        log.setLevel(logging_level)
+        # log.setLevel(logging_level)
         for state in self.__states:
             state.config_logging(logging_level)
         return self

@@ -1,15 +1,11 @@
 """Рабочая логика State."""
 
-import logging
 from typing import Final, Self
 
 from ..exceptions import NewStateData, NewStateException, StateMachineError
 from ..shared import exc_group_to_exc
 from ..states_enum import StatesEnum
 from .stage_callbacks import StageCallbacks
-
-log = logging.getLogger(__name__)
-log.setLevel(logging.INFO)
 
 EXC_COMPL_NO_NEWSTATE: Final[
     str
@@ -61,7 +57,6 @@ class StateRunner(object):
 
     def config_logging(self, logging_level: int) -> Self:
         """Конфигурировать уровень логгирования."""
-        log.setLevel(logging_level)
         return self
 
     async def __run_on_enter(self) -> None:

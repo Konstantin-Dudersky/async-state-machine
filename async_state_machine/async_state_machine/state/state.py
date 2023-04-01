@@ -1,6 +1,5 @@
 """Строитель для создания State."""
 
-import logging
 from dataclasses import dataclass
 from typing import Final, Self
 
@@ -12,10 +11,6 @@ from .state_runner import StateRunner
 
 EXC_NO_ON_RUN: Final[str] = "No callbacks on on_run input, state: {name}"
 DEFAULT_TIMEOUT: Final[float] = 2.0
-
-
-log = logging.getLogger(__name__)
-log.setLevel(logging.INFO)
 
 
 @dataclass
@@ -77,7 +72,6 @@ class State(object):
             timeout=DEFAULT_TIMEOUT,
             timeout_to_state=None,
         )
-        self.__logging_level = logging.INFO
 
     def config_timeout_on_enter(
         self,
@@ -153,7 +147,6 @@ class State(object):
 
     def config_logging(self, logging_level: int) -> Self:
         """Конфигурировать уровень логгирования."""
-        log.setLevel(logging_level)
         return self
 
     def build(self) -> StateRunner:
@@ -170,7 +163,7 @@ class State(object):
                 name=self.__name,
                 stage="on_enter",
                 coro_wrapper=CoroWrappers.single,
-                logging_level=self.__logging_level,
+                logging_level=0,
             ),
             on_run=StageCallbacks(
                 callbacks=self.__on_run.callbacks,
@@ -179,7 +172,7 @@ class State(object):
                 name=self.__name,
                 stage="on_run",
                 coro_wrapper=CoroWrappers.infinite,
-                logging_level=self.__logging_level,
+                logging_level=0,
             ),
             on_exit=StageCallbacks(
                 callbacks=self.__on_exit.callbacks,
@@ -188,6 +181,6 @@ class State(object):
                 name=self.__name,
                 stage="on_exit",
                 coro_wrapper=CoroWrappers.single,
-                logging_level=self.__logging_level,
+                logging_level=0,
             ),
         )
