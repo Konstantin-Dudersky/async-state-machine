@@ -89,4 +89,4 @@ def test_init_state() -> None:
         states_enum=States,
         init_state=States.state_2,
     )
-    assert state_machine.active_state.name == States.state_2
+    assert state_machine.active_state == States.state_2

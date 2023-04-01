@@ -14,7 +14,6 @@ EXC_REUSE_STATE: Final[str] = "Several use state with name: {name}"
 
 
 log = logging.getLogger(__name__)
-log.setLevel(logging.INFO)
 
 
 class StateMachine(object):
@@ -37,9 +36,9 @@ class StateMachine(object):
         self.__active_state = self.__set_init_state(init_state)
 
     @property
-    def active_state(self) -> StateRunner:
+    def active_state(self) -> StatesEnum:
         """Активное состояние."""
-        return self.__active_state
+        return self.__active_state.name
 
     async def run(self) -> None:
         """Задача для асинхронного выполнения."""

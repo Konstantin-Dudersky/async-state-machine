@@ -18,6 +18,7 @@ packages = [{ include = "async_state_machine" }]
 
 [tool.poetry.dependencies]
 python = "3.11.*"
+loguru = "^0.6.0"
 
 
 [tool.poetry.group.dev.dependencies]

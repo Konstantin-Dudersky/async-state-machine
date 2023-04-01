@@ -3,6 +3,11 @@ import asyncio
 import pytest
 import async_state_machine as sm
 
+from async_state_machine.state.stage_callbacks import (
+    EXC_TIMEOUT_WITHOUT_TARGET,
+    EXC_TIMEOUT,
+)
+
 
 class States(sm.StatesEnum):
     state_1 = sm.enum_auto()
@@ -30,9 +35,11 @@ def test_timeout_exc() -> None:
     try:
         asyncio.run(state.run())
     except sm.StateMachineError as exc:
-        assert (
-            exc.message
-            == "Timeout occur in state state_1, stage on_exit, but target state not specified"
+        assert exc.message == EXC_TIMEOUT_WITHOUT_TARGET.format(
+            base_msg=EXC_TIMEOUT.format(
+                name=States.state_1,
+                stage="on_exit",
+            )
         )
 
 
