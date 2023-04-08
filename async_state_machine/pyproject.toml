@@ -9,7 +9,7 @@ line-length = 80
 
 [tool.poetry]
 name = "async_state_machine"
-version = "0.1.0"
+version = "0.0.3"
 description = ""
 authors = ["konstantin-dudersky <konstantin.dudersky@gmail.com>"]
 readme = "README.md"
