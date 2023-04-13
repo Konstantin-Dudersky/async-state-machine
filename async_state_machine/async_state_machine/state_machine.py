@@ -3,6 +3,7 @@
 import asyncio
 from typing import Final, Iterable, Self, Type
 
+from .const import INFINITE_CORO_SLEEP
 from .exceptions import NewStateException, StateMachineError
 from .state import State, StateRunner
 from .states_enum import StatesEnum
@@ -44,7 +45,7 @@ class StateMachine(object):
             except NewStateException as exc:
                 new_state = exc.exception_data.new_state
                 self.__active_state = self.__find_state_by_name(new_state)
-            await asyncio.sleep(0)
+            await asyncio.sleep(INFINITE_CORO_SLEEP)
 
     def config_logging(self, logging_level: int) -> Self:
         """Конфигурировать уровень логгирования."""
