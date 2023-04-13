@@ -9,7 +9,6 @@ from ..exceptions import NewStateData, NewStateException, StateMachineError
 from ..states_enum import StatesEnum
 from ..typings import TCallback, TCallbackCollection
 
-
 EXC_TIMEOUT: Final[str] = "Timeout occur {name}|{stage}"
 EXC_TIMEOUT_WITHOUT_TARGET: Final[
     str
@@ -54,7 +53,7 @@ class StageCallbacks(object):
         )
         new_state_data: NewStateData | None = None
         try:
-            await self.__run_taskgroup()
+            await self.__run()
         except* asyncio.TimeoutError:
             self.__except_timeout()
         except* NewStateException as exc:
@@ -73,25 +72,26 @@ class StageCallbacks(object):
 
         TODO - remove
         """
-        # log.setLevel(logging_level)
         return self
 
-    async def __run_taskgroup(self) -> None:
+    async def __run(self) -> None:
         """Запуск."""
-        async with asyncio.TaskGroup() as tg:
-            self.__create_tasks(tg)
-
-    def __create_tasks(self, tg: asyncio.TaskGroup) -> None:
-        """Создание группы задач."""
         if self.__callbacks is None:
-            return
-        for task in self.__callbacks:
-            tg.create_task(
-                asyncio.wait_for(
-                    fut=self.__coro_wrapper(task),
-                    timeout=self.__timeout,
-                ),
+            return await asyncio.sleep(0)
+        await asyncio.gather(*self.__create_tasks(self.__callbacks))
+
+    def __create_tasks(
+        self,
+        callbacks: TCallbackCollection,
+    ) -> tuple[Coroutine[Any, Any, None], ...]:
+        """Создание коллекцию задач."""
+        return tuple(
+            asyncio.wait_for(
+                fut=self.__coro_wrapper(task),
+                timeout=self.__timeout,
             )
+            for task in callbacks
+        )
 
     def __except_timeout(self) -> None:
         """Обработка превышения времени выполнения."""
