@@ -1,7 +1,8 @@
 """Запуск функций для этапа состояния."""
 
 import asyncio
-from typing import Any, Callable, Coroutine, Final, Literal, Self
+from collections.abc import Awaitable, Callable
+from typing import Any, Final, Literal, Self
 
 from loguru import logger
 
@@ -25,7 +26,7 @@ class StageCallbacks(object):
         timeout_to_state: StatesEnum | None,
         name: StatesEnum,
         stage: Literal["on_enter", "on_run", "on_exit"],
-        coro_wrapper: Callable[[TCallback], Coroutine[Any, Any, None]],
+        coro_wrapper: Callable[[TCallback], Awaitable[None]],
         logging_level: int = 0,  # TODO - remove
     ) -> None:
         """Запуск функций для этапа состояния."""
@@ -83,7 +84,7 @@ class StageCallbacks(object):
     def __create_tasks(
         self,
         callbacks: TCallbackCollection,
-    ) -> tuple[Coroutine[Any, Any, None], ...]:
+    ) -> tuple[Awaitable[None], ...]:
         """Создание коллекцию задач."""
         return tuple(
             asyncio.wait_for(
@@ -111,7 +112,7 @@ class StageCallbacks(object):
 
     def __except_new_state(
         self,
-        exc: ExceptionGroup[NewStateException],
+        exc: BaseExceptionGroup[NewStateException],
     ) -> NewStateData:
         """Обработка перехода в новое состояние."""
         new_state_data = exc.exceptions[0]

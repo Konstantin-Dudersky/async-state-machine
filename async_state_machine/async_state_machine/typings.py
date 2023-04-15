@@ -1,7 +1,7 @@
 """Типы данных для подксказок типов."""
 
-from typing import Callable, Coroutine, Iterable
+from collections.abc import Awaitable, Callable, Iterable
 
-TCallback = Callable[[], Coroutine[None, None, None]]
+TCallback = Callable[[], Awaitable[None]]
 
 TCallbackCollection = Iterable[TCallback]
