@@ -25,6 +25,7 @@ loguru = "^0.6.0"
 black = "*"
 pytest = "7.2.0"
 wemake-python-styleguide = "0.17.0"
+flake8-deprecated = "*"
 
 
 [tool.pyright]
